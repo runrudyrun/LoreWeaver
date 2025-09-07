@@ -1,7 +1,7 @@
 import { Devvit } from '@devvit/public-api';
 import { RedisWrapper } from './redis';
 import { calculateNoveltyScore, calculateDiversityScore } from './validation';
-import { Story, Shard, CanonizeWeights } from './types';
+import { Story, Shard, CanonizeWeights, RuleCard } from './types';
 
 const DEFAULT_WEIGHTS: CanonizeWeights = {
   w1: 0.5, // votes

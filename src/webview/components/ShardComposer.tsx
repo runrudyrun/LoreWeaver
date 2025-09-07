@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { RuleCard } from '../types';
+import { RuleCard as RuleCardType } from '../types';
+import { RuleCard } from './RuleCard';
 import { api } from '../lib/api';
 import { validateShardText } from '../lib/validation';
 
 interface ShardComposerProps {
   storyId: string;
   selectedParentId: string | null;
-  ruleCard: RuleCard;
+  ruleCard: RuleCardType;
   onShardCreated: () => void;
 }
 

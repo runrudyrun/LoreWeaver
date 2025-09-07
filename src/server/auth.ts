@@ -16,7 +16,7 @@ export function getUserIdentifier(context: Devvit.Context): string {
 }
 
 export function getUserName(context: Devvit.Context): string {
-  return context.userName || 'anonymous';
+  return context.userId || 'anonymous';
 }
 
 export function requireModerator(context: Devvit.Context): void {

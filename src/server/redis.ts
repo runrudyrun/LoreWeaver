@@ -72,13 +72,13 @@ export class RedisWrapper {
   }
 
   async getShardsByVotes(storyId: string, start: number = 0, end: number = 19): Promise<string[]> {
-    const result = await this.redis.zRange(`story:${storyId}:byVotes`, start, end, { reverse: true });
-    return result.map(r => r.member);
+    const result = await this.redis.zRange(`story:${storyId}:byVotes`, start, end);
+    return result.reverse().map((r: any) => r.member);
   }
 
   async getShardsByTime(storyId: string, start: number = 0, end: number = 19): Promise<string[]> {
-    const result = await this.redis.zRange(`story:${storyId}:byTime`, start, end, { reverse: true });
-    return result.map(r => r.member);
+    const result = await this.redis.zRange(`story:${storyId}:byTime`, start, end);
+    return result.reverse().map((r: any) => r.member);
   }
 
   async getUserRateCount(userName: string, date: string): Promise<number> {
@@ -89,12 +89,14 @@ export class RedisWrapper {
 
   async incrementUserRateCount(userName: string, date: string): Promise<number> {
     const key = `user:${userName}:rate:${date}`;
-    const count = await this.redis.incr(key);
+    const current = await this.getUserRateCount(userName, date);
+    const newCount = current + 1;
+    await this.redis.set(key, newCount.toString());
     
     // Set TTL to 25 hours to ensure it expires after the day
     await this.redis.expire(key, 25 * 60 * 60);
     
-    return count;
+    return newCount;
   }
 
   async hideShard(shardId: string, hidden: boolean): Promise<void> {

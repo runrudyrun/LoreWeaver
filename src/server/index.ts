@@ -5,6 +5,7 @@ import { requireAuthenticated, getUserIdentifier, getUserName, requireModerator 
 import { canonizeAndPost } from './canonize';
 import { Story, Shard, RuleCard, RealtimeEvent } from './types';
 
+
 const RATE_LIMIT_PER_HOUR = 2;
 const MOD_REVIEW_ENABLED = true;
 
@@ -47,7 +48,7 @@ export async function initializeStory(context: Devvit.Context): Promise<void> {
 Devvit.addSchedulerJob({
   name: 'canonizeAndPost',
   onRun: async (event, context) => {
-    await canonizeAndPost(context);
+    await canonizeAndPost(context as any);
   }
 });
 
@@ -63,17 +64,18 @@ Devvit.addCustomPostType({
       runAt: new Date()
     });
     
+    // Return webview configuration
     return {
       webView: {
         url: 'webview/index.html',
         height: 'tall'
       }
-    };
+    } as any;
   }
 });
 
-// Server API functions
-Devvit.addHandler('api/shard.create', async (request, context) => {
+// Export API functions for Devvit handlers
+export async function handleShardCreate(request: any, context: Devvit.Context) {
   requireAuthenticated(context);
   
   const { storyId, parentId, text } = request.json();
@@ -166,16 +168,16 @@ Devvit.addHandler('api/shard.create', async (request, context) => {
     }
   };
   
-  context.realtime.send(`story:${storyId}`, event);
+  context.realtime.send(`story:${storyId}`, event as any);
   
   return {
     success: true,
     shardId,
     violations: violations.length > 0 ? violations : undefined
   };
-});
+}
 
-Devvit.addHandler('api/shard.vote', async (request, context) => {
+export async function handleShardVote(request: any, context: Devvit.Context) {
   requireAuthenticated(context);
   
   const { storyId, shardId, dir } = request.json();
@@ -206,16 +208,16 @@ Devvit.addHandler('api/shard.vote', async (request, context) => {
     }
   };
   
-  context.realtime.send(`story:${storyId}`, event);
+  context.realtime.send(`story:${storyId}`, event as any);
   
   return {
     success: true,
     shardId,
     votes: newVotes
   };
-});
+}
 
-Devvit.addHandler('api/story.state', async (request, context) => {
+export async function handleStoryState(request: any, context: Devvit.Context) {
   const { storyId, tab = 'top', cursor = '0', limit = 20 } = request.json();
   const redis = new RedisWrapper(context.redis);
   
@@ -263,9 +265,9 @@ Devvit.addHandler('api/story.state', async (request, context) => {
     shards: summaries,
     nextCursor: shardIds.length === limit ? (start + limit).toString() : null
   };
-});
+}
 
-Devvit.addHandler('api/mod.hide', async (request, context) => {
+export async function handleModHide(request: any, context: Devvit.Context) {
   requireModerator(context);
   
   const { storyId, shardId, hidden } = request.json();
@@ -279,9 +281,9 @@ Devvit.addHandler('api/mod.hide', async (request, context) => {
   await redis.hideShard(shardId, hidden);
   
   return { success: true, shardId, hidden };
-});
+}
 
-Devvit.addHandler('api/mod.freeze', async (request, context) => {
+export async function handleModFreeze(request: any, context: Devvit.Context) {
   requireModerator(context);
   
   const { storyId, shardId, frozen } = request.json();
@@ -295,9 +297,9 @@ Devvit.addHandler('api/mod.freeze', async (request, context) => {
   await redis.freezeShard(shardId, frozen);
   
   return { success: true, shardId, frozen };
-});
+}
 
 // Initialize handler
-Devvit.addHandler('initializeStory', async (event, context) => {
+export async function handleInitializeStory(event: any, context: Devvit.Context) {
   await initializeStory(context);
-});
+}
