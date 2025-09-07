@@ -52,17 +52,90 @@ Devvit.addSchedulerJob({
   }
 });
 
+Devvit.addSchedulerJob({
+  name: 'initializeStory',
+  onRun: async (event, context) => {
+    await initializeStory(context as any);
+  }
+});
+
+function getNextBRTCutoff(): Date {
+  // Get current time in BRT (UTC-3)
+  const now = new Date();
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const brtTime = new Date(utc + (3600000 * -3)); // BRT is UTC-3
+  
+  // Set next cutoff to 23:50 BRT today or tomorrow
+  const nextCutoff = new Date(brtTime);
+  nextCutoff.setHours(23, 50, 0, 0);
+  
+  // If today's cutoff has passed, schedule for tomorrow
+  if (nextCutoff <= brtTime) {
+    nextCutoff.setDate(nextCutoff.getDate() + 1);
+  }
+  
+  return nextCutoff;
+}
+
+Devvit.addSchedulerJob({
+  name: 'dailyStoryCycle',
+  onRun: async (event, context) => {
+    console.log('🔄 Running daily story cycle...');
+    
+    try {
+      // First, canonize the current story if it exists
+      const redis = new RedisWrapper(context.redis);
+      const currentStory = await redis.getCurrentStory();
+      
+      if (currentStory) {
+        console.log(`📖 Canonizing story ${currentStory.id} chapter ${currentStory.chapter}`);
+        await canonizeAndPost(context as any);
+      } else {
+        console.log('📝 No current story found, creating initial story');
+        await initializeStory(context as any);
+      }
+      
+      // Schedule next day's cycle at 23:50 BRT
+      const nextRun = getNextBRTCutoff();
+      
+      await context.scheduler.runJob({
+        name: 'dailyStoryCycle',
+        data: {},
+        runAt: nextRun
+      });
+      
+      console.log(`📅 Next daily story cycle scheduled for ${nextRun.toISOString()} (BRT)`);
+      console.log('✅ Daily story cycle completed');
+      
+    } catch (error) {
+      console.error('❌ Daily story cycle failed:', error);
+      throw error;
+    }
+  }
+});
+
 // API Endpoints
 Devvit.addCustomPostType({
   name: 'LoreWeave',
   height: 'tall',
   render: (context) => {
-    // Initialize story on first load
+    // Initialize story on first load (fire and forget)
     context.scheduler.runJob({
       name: 'initializeStory',
       data: {},
       runAt: new Date()
-    });
+    }).catch(err => console.error('Failed to initialize story:', err));
+    
+    // Schedule daily story cycle at 23:50 BRT (America/Sao_Paulo)
+    const nextRun = getNextBRTCutoff();
+    
+    context.scheduler.runJob({
+      name: 'dailyStoryCycle',
+      data: {},
+      runAt: nextRun
+    }).catch(err => console.error('Failed to schedule daily cycle:', err));
+    
+    console.log(`📅 Daily story cycle scheduled for ${nextRun.toISOString()}`);
     
     // Return webview configuration
     return {

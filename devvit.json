@@ -1,23 +1,15 @@
 {
-  "name": "loreweave",
+  "name": "lorecolab",
   "description": "Branching microfiction with daily constraints",
-  "entryPoints": {
-    "webview": "src/webview/index.tsx",
-    "server": "src/server/index.ts"
-  },
+  "server": {},
   "permissions": {
     "redis": true,
     "realtime": true,
-    "http": { "enable": false }
+    "http": {
+      "enable": false
+    }
   },
-  "triggers": {
-    "schedules": [
-      {
-        "id": "canonizeDaily",
-        "cron": "50 23 * * *",
-        "timezone": "America/Sao_Paulo",
-        "function": "canonizeAndPost"
-      }
-    ]
+  "dev": {
+    "subreddit": "lorecolab_dev"
   }
 }
